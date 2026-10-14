@@ -1,0 +1,76 @@
+---
+title: "Project title"
+author: "Name 1, Name 2, Name 3"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+bibliography: references.bib
+---
+
+<!--
+NOTE FOR THE GROUP
+This document already runs from top to bottom with placeholder functions.
+Replace the placeholder text (marked TODO) and the functions in src/r/ with
+the real project. Keep the code chunks short: the work happens in src/r/,
+and this file tells the story.
+-->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+# Load packages and project functions. Paths are relative to the project
+# folder, so the document runs on every computer after cloning.
+source("src/r/setup_packages.R")
+install_and_load()
+
+source("src/r/simulate_data.R")
+source("src/r/analyse_data.R")
+source("src/r/plot_results.R")
+```
+
+## 1. Introduction
+
+TODO: explain the research question and why it matters, with references to
+the literature. Citations are written like this: [@simmons2011]. They appear
+automatically in the reference list at the end.
+
+## 2. Data
+
+TODO: explain how the data are generated or collected, and why the chosen
+values (sample size, effect size, ...) are realistic.
+
+```{r simulate-data}
+study_data <- simulate_data(n_per_group = 50, mean_difference = 0.5)
+save_data(study_data, file = "data/simulated_data.csv")
+
+head(study_data)
+```
+
+## 3. Analysis
+
+TODO: explain which statistical test is used and why it fits the data.
+
+```{r analyse-data}
+test_result <- analyse_data(study_data)
+test_result
+```
+
+TODO: interpret the result in words (direction, size and significance of the
+effect).
+
+## 4. Visualisation
+
+TODO: explain what the plot shows and how it supports the analysis.
+
+```{r plot-results, fig.width = 7, fig.height = 5}
+plot_results(study_data)
+```
+
+## 5. Discussion
+
+TODO: what do the results mean, what are the limitations, and what would be a
+useful next step?
+
+## References

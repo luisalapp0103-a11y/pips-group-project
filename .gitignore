@@ -1,0 +1,12 @@
+# RStudio and R session files
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Knitted output (graders run main.Rmd themselves)
+main.html
+main_files/
+
+# macOS
+.DS_Store
