@@ -31,6 +31,12 @@ ATTENTION_PASS_RATE <- 0.95
 TARGET_POWER <- 0.80
 ALPHA <- 0.05
 
+# Effect size from the literature that the simulation should match
+# (Cohen's d). Sievwright et al. (2021) found d = 0.42 for discrimination
+# between true and misinformation statements; we use this conservative
+# value because our shorter delay probably gives a smaller effect.
+TARGET_COHENS_D <- 0.42
+
 
 #' Build the table of the 24 test statements
 #'
@@ -268,4 +274,52 @@ plot_power_curve <- function(curve, target_power = TARGET_POWER) {
                         "% power")
     ) +
     ggplot2::theme_minimal()
+}
+
+
+# Calibration -------------------------------------------------------------
+#
+# effect_size works on the "evidence" scale inside the simulation, which is
+# not the same as Cohen's d. These functions translate between the two, so
+# we can choose an effect_size that matches an effect from the literature.
+
+
+#' Cohen's d that a given effect_size produces
+#'
+#' Simulates one very large study, so the estimate is precise, and compares
+#' the endorsement of misinformation statements between the conditions.
+#'
+#' @param effect_size See simulate_participant().
+#' @param n_per_group Participants per condition; large = precise but slow.
+#' @param seed Random seed, so the result is the same every time.
+#' @return Cohen's d (misinformation minus control, pooled SD).
+simulated_cohens_d <- function(effect_size, n_per_group = 1000, seed = 2026) {
+  study <- simulate_study(n_per_group, effect_size, seed = seed)
+  per_participant <- summarise_endorsement(study)
+
+  is_misinformed <- per_participant$condition == "misinformation"
+  misinformed <- per_participant$endorsed[is_misinformed]
+  control <- per_participant$endorsed[!is_misinformed]
+
+  pooled_sd <- sqrt((var(misinformed) + var(control)) / 2)
+  (mean(misinformed) - mean(control)) / pooled_sd
+}
+
+
+#' Find the effect_size that matches a target Cohen's d
+#'
+#' @param target_d Cohen's d to match, e.g. from a published study.
+#' @param candidates effect_size values to try.
+#' @return A list with `table` (every candidate and its Cohen's d) and
+#'   `best` (the candidate whose d is closest to target_d).
+find_effect_size <- function(target_d = TARGET_COHENS_D,
+                             candidates = seq(0.1, 1, by = 0.1)) {
+  cohens_d <- numeric(length(candidates))
+  for (i in seq_along(candidates)) {
+    cohens_d[i] <- simulated_cohens_d(candidates[i])
+  }
+
+  table <- data.frame(effect_size = candidates, cohens_d = round(cohens_d, 2))
+  best <- candidates[which.min(abs(cohens_d - target_d))]
+  list(table = table, best = best)
 }
