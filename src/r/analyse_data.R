@@ -43,5 +43,13 @@ analyse_data <- function(data) {
       misinfo_proportion = mean(accepted),
       .groups = "drop"
     )
-  return(participant_data)
+  # Compare misinformation acceptance between conditions
+  test_result <- t.test(
+    misinfo_proportion ~ condition,
+    data = participant_data
+  )
+  return(list(
+    participant_data = participant_data,
+    t_test = test_result
+  ))
 }
