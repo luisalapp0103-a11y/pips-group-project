@@ -27,6 +27,10 @@ PARTICIPANT_BIAS_SD <- 0.3
 # Proportion of participants who pass the attention check.
 ATTENTION_PASS_RATE <- 0.95
 
+# Power we aim for and significance level of the test.
+TARGET_POWER <- 0.80
+ALPHA <- 0.05
+
 
 #' Build the table of the 24 test statements
 #'
@@ -115,14 +119,17 @@ simulate_participant <- function(participant_number, effect_size = 0.5,
 #'
 #' @param n_per_group Number of participants per condition.
 #' @param effect_size See simulate_participant().
-#' @param seed Random seed, so the same data come out every time.
+#' @param seed Random seed, so the same data come out every time. Use NULL
+#'   for a different random study on every call (needed for power analysis).
 #' @return One data frame with the rows of all participants.
 simulate_study <- function(n_per_group = 20, effect_size = 0.5, seed = 2026) {
   if (!is.numeric(n_per_group) || n_per_group < 1) {
     stop("n_per_group must be a number of at least 1")
   }
 
-  set.seed(seed)
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
   participants <- list()
   for (number in seq_len(2 * n_per_group)) {
     participants[[number]] <- simulate_participant(number, effect_size)
@@ -152,4 +159,113 @@ save_simulated_study <- function(study_data, folder = "data/simulated") {
   }
 
   invisible(folder)
+}
+
+
+# Power analysis ----------------------------------------------------------
+#
+# Idea: simulate the study many times, run the test each time, and count how
+# often the effect is significant. That proportion is the power: the chance
+# that a study of this size finds the effect if it really exists.
+
+
+#' Proportion of misinformation statements each participant called "true"
+#'
+#' Participants who failed the attention check are left out. A response of
+#' 4-6 counts as "true".
+#'
+#' @param study_data Data frame in the format of the specification.
+#' @return A data frame with one row per participant and columns
+#'   participant_id, condition and endorsed (proportion 0-1).
+summarise_endorsement <- function(study_data) {
+  passed <- study_data[study_data$attention_correct == 1, ]
+  misinformation_rows <- passed[passed$item_type == "misinformation", ]
+  misinformation_rows$endorsed <- misinformation_rows$response >= 4
+
+  aggregate(endorsed ~ participant_id + condition,
+            data = misinformation_rows, FUN = mean)
+}
+
+
+#' p-value of the misinformation effect in one study
+#'
+#' Welch t-test comparing the endorsement of misinformation statements
+#' between the two conditions.
+#'
+#' @param study_data Data frame in the format of the specification.
+#' @return The p-value, or NA if the test could not be run.
+test_misinformation_effect <- function(study_data) {
+  per_participant <- summarise_endorsement(study_data)
+  tryCatch(
+    t.test(endorsed ~ condition, data = per_participant)$p.value,
+    error = function(e) NA
+  )
+}
+
+
+#' Estimate the power for one group size
+#'
+#' @param n_per_group Number of participants per condition.
+#' @param effect_size See simulate_participant().
+#' @param n_simulations How many studies to simulate. More = more precise,
+#'   but slower.
+#' @param alpha Significance level.
+#' @return Proportion of simulated studies with p < alpha.
+estimate_power <- function(n_per_group, effect_size = 0.5,
+                           n_simulations = 200, alpha = ALPHA) {
+  if (n_per_group < 5) {
+    stop("n_per_group must be at least 5 for a meaningful t-test")
+  }
+
+  p_values <- numeric(n_simulations)
+  for (i in seq_len(n_simulations)) {
+    study <- simulate_study(n_per_group, effect_size, seed = NULL)
+    p_values[i] <- test_misinformation_effect(study)
+  }
+  mean(p_values < alpha, na.rm = TRUE)
+}
+
+
+#' Estimate the power for several group sizes
+#'
+#' @param group_sizes Numbers of participants per condition to try.
+#' @param effect_size See simulate_participant().
+#' @param n_simulations Simulated studies per group size.
+#' @param seed Random seed, so the curve is the same every time.
+#' @return A data frame with columns n_per_group and power.
+power_curve <- function(group_sizes = c(5, 10, 15, 20, 30, 40),
+                        effect_size = 0.5, n_simulations = 200,
+                        seed = 2026) {
+  set.seed(seed)
+  power <- numeric(length(group_sizes))
+  for (i in seq_along(group_sizes)) {
+    power[i] <- estimate_power(group_sizes[i], effect_size, n_simulations)
+  }
+  data.frame(n_per_group = group_sizes, power = power)
+}
+
+
+#' Plot a power curve
+#'
+#' @param curve Data frame from power_curve().
+#' @param target_power Power we aim for, drawn as a dashed line.
+#' @return A ggplot object.
+plot_power_curve <- function(curve, target_power = TARGET_POWER) {
+  ggplot2::ggplot(curve, ggplot2::aes(x = n_per_group, y = power)) +
+    ggplot2::geom_hline(yintercept = target_power, linetype = "dashed",
+                        colour = "grey50") +
+    ggplot2::geom_line(colour = "steelblue") +
+    ggplot2::geom_point(colour = "steelblue", size = 2.5) +
+    ggplot2::scale_y_continuous(
+      limits = c(0, 1),
+      labels = function(x) paste0(round(x * 100), "%")
+    ) +
+    ggplot2::labs(
+      x = "Participants per condition",
+      y = "Power",
+      title = "How many participants do we need?",
+      subtitle = paste0("Dashed line: ", round(target_power * 100),
+                        "% power")
+    ) +
+    ggplot2::theme_minimal()
 }
