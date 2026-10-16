@@ -1,18 +1,33 @@
-# PLACEHOLDER: a simple example so main.Rmd runs from the start.
-# The analysis owner replaces this with the real, informative plot.
+# Plot results from the misinformation effect experiment
 
-#' Plot individual scores and the group means
+#' Plot individual misinformation acceptance scores and group means
 #'
-#' @param data Data frame with columns group and score.
+#' @param data Participant-level data containing condition and misinfo_proportion.
 #' @return A ggplot object.
+
 plot_results <- function(data) {
-  ggplot(data, aes(x = group, y = score)) +
-    geom_jitter(width = 0.1, alpha = 0.5) +
-    stat_summary(fun = mean, geom = "point", size = 4, colour = "darkred") +
-    labs(
-      x = "Group",
-      y = "Score",
-      title = "Scores per group (placeholder plot)"
+  ggplot2::ggplot(
+    data,
+    ggplot2::aes(x = condition, y = misinfo_proportion)
+  ) +
+    ggplot2::geom_jitter(
+      width = 0.1,
+      alpha = 0.5
     ) +
-    theme_minimal()
+    ggplot2::stat_summary(
+      fun = mean,
+      geom = "point",
+      size = 4
+    ) +
+    ggplot2::stat_summary(
+      fun.data = ggplot2::mean_cl_normal,
+      geom = "errorbar",
+      width = 0.1
+    ) +
+    ggplot2::labs(
+      x = "Condition",
+      y = "Misinformation acceptance proportion",
+      title = "Misinformation acceptance by condition"
+    ) +
+    ggplot2::theme_minimal()
 }
