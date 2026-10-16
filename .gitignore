@@ -10,3 +10,4 @@ main_files/
 
 # macOS
 .DS_Store
+main_cache/
