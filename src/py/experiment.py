@@ -9,39 +9,7 @@ import csv
 from pathlib import Path
 from datetime import datetime
 import random
-
-# ----- Experiment materials -----
-welcome_text = (
-    "Welcome to the misinformation effect experiment!\n\n"
-    "This is a study about memory for everyday events.\nIt takes about 15 min.\nYour participation will be anonymous.\n\n"
-    "Please indicate you consent to join the experiment."
-)
-instruction_text = ("You will now read a short story, one sentence at a time.\nPlease pay attention.")
-
-stories = [
-    "It is a rainy Tuesday morning at Café Linde, a small café on a busy street.",
-    "A young woman in a red scarf sits at a table by the window, working on her laptop with a cup of tea.",
-    "Next to her laptop lie her phone and a black leather wallet.",
-    "A tall man in a green jacket comes in and orders a coffee at the counter.",
-    "The barista, an older man with glasses, tells him the price: 3 euros 50.",
-    "The man pays with coins and sits down at the table next to the woman.",
-    "The woman gets up to go to the toilet and leaves her things on the table.",
-    "The man looks around, then slips the woman's wallet into his jacket pocket.",
-    "He leaves his coffee untouched, walks out of the café and turns left.",
-    "A few minutes later, the woman comes back and sees that her wallet is gone.",
-    "She tells the barista, who calls the police.",
-    "Two police officers arrive and write down the woman's description of the man."
-]
-attention_check_question = "What was the name of the café?"
-option_text = ["AAAA", "BBBB", "Linde", "DDDD"]
-option_position = [(0, 0.20), (0, 0.05), (0, -0.10), (0, -0.25)]
-
-filler_instruction = "Please complete the following arithmetic problems.\nType your answers and press enter to proceed to the next question."
-
-# ----- Experiment parameters -----
-story_time = 8
-filler1_time = 300
-
+import pandas as pd
 # ----- General setting -----
 # data folders
 project_folder = Path(__file__).resolve().parents[2]
@@ -70,7 +38,7 @@ participant_row = {
     "Participant_id": participant_info["Participant_id"],
     "Age": participant_info["Age"],
     "Gender": participant_info["Gender"],
-    "Time of experiment": datetime.now().isoformat(timespec="seconds")
+    "Timestamp": datetime.now().isoformat(timespec="seconds")
 }
 
 # main window
@@ -86,6 +54,65 @@ def esc_quit():
         win.close()
         core.quit()
 # !!change to full screen before running
+
+# conditions
+if int(participant_info["Participant_id"]) % 2 == 0:
+    participant_row["Condition"] = "control"
+elif int(participant_info["Participant_id"]) % 2 == 1:
+    participant_row["Condition"] = "misinformation"
+
+
+# ----- Experiment materials -----
+welcome_text = (
+    "Welcome to the misinformation effect experiment!\n\n"
+    "This is a study about memory for everyday events.\nIt takes about 15 min.\nYour participation will be anonymous.\n\n"
+    "Please indicate you consent to join the experiment."
+)
+instruction_text = ("You will now read a short story, one sentence at a time.\nPlease pay attention.")
+
+stories = [
+    "It is a rainy Tuesday morning at Cafe Linde, a small cafe on a busy street.",
+    "A young woman in a red scarf sits at a table by the window, working on her laptop with a cup of tea.",
+    "Next to her laptop lie her phone and a black leather wallet.",
+    "A tall man in a green jacket comes in and orders a coffee at the counter.",
+    "The barista, an older man with glasses, tells him the price: 3 euros 50.",
+    "The man pays with coins and sits down at the table next to the woman.",
+    "The woman gets up to go to the toilet and leaves her things on the table.",
+    "The man looks around, then slips the woman's wallet into his jacket pocket.",
+    "He leaves his coffee untouched, walks out of the cafe and turns left.",
+    "A few minutes later, the woman comes back and sees that her wallet is gone.",
+    "She tells the barista, who calls the police.",
+    "Two police officers arrive and write down the woman's description of the man."
+]
+attention_check_question = "What was the name of the cafe?"
+option_text = ["Cafe Roma", "Cafe Linde", "Cafe Central", "Cafe Noord"]
+option_position = [(0, 0.20), (0, 0.05), (0, -0.10), (0, -0.25)]
+
+filler_instruction = "Please complete the following arithmetic problems.\nType your answers and press enter to proceed to the next question."
+
+eye_witness_instruction = "Another customer who was in the cafe wrote down what happened.\nPlease read their account carefully."
+
+control_text = "I was sitting in the corner of Cafe Linde that Tuesday morning, reading the newspaper. A young woman by the window was working on her laptop and having a drink. Next to her laptop were her phone and a leather wallet. Then a tall man in a jacket came in and ordered a coffee from the barista, an older man. The man paid and sat down right next to the woman. When she went to the toilet, he looked around and took her wallet. He walked out without touching his coffee and left. When the woman came back and saw that her wallet was missing, she was very upset. The barista called the police, and two officers arrived soon after to take her statement."
+misinformation_text = "I was sitting in the corner of Cafe Linde that sunny Tuesday morning, reading the newspaper. A young woman by the window was working on her laptop and drinking a cappuccino. Next to her laptop were her phone and a brown leather wallet. Then a tall man in a blue jacket came in and ordered a coffee from the barista, an older man with a grey beard. The man paid by card and sat down right next to the woman. When she went to the toilet, he looked around and slipped her wallet into his backpack. He walked out without touching his coffee and turned right at the door. When the woman came back and saw that her wallet was missing, she was very upset. The barista called the police, and two officers arrived soon after to take her statement."
+
+memory_test_instruction = "You will now see 24 statements about the story you read at the start, one at a time. For each statement, indicate how sure you are that it is true or false for the story (not the account).\nAnswer with the keys 1 to 6. There are no time limits, but please answer with your first impression."
+scale_labels = [
+    "Certain this is false",
+    "Probably false",
+    "Maybe false",
+    "Maybe true",
+    "Probably true",
+    "Certain this is true"
+]
+
+memory_test_items = pd.read_csv(project_folder / "src" / "py" / "memory_test_items.csv")
+
+debrief_text = "Thank you for your partcipation!"
+
+# ----- Experiment parameters -----
+story_time = 8
+filler1_time = 300
+filler2_time = 180
 
 # ----- Functions -----
 # creating clicking buttons
@@ -192,31 +219,43 @@ while selected is None:
             break
 
 # storing attention check results
-participant_row["attention_response"] = selected == 2
+participant_row["attention_response"] = selected == 1
 
 
 # ----- Filler Task1 -----
 filler_instruction_screen = text_display((0, 0.15), filler_instruction)
-filler_timer = core.Clock()
-calculation = ["+", "-", "*"]
 arithmetic_question = text_display((0, 0))
 answer_text = text_display((0, -0.15))
-while filler_timer.getTime() < filler1_time:
+
+# countdown timer
+timer = text_display((win.size[0] / win.size[1]/2 - 0.1, 0.40))
+countdown = core.CountdownTimer(filler1_time)
+
+# task procedure
+count = 0
+correct_count = 0
+while countdown.getTime() >= 0:
     # create question
-    number_A, number_B = random.randint(0, 100), random.randint(0, 100)
-    operator = random.choice(calculation)
-    arithmetic_question.text = f"{number_A} {operator} {number_B}= ?"
+    number_A, number_B = random.randint(10, 99), random.randint(10, 99)
+    correct_sum = number_A + number_B
+    arithmetic_question.text = f"{number_A} + {number_B}= ?"
     
     #collect answer
     typed_answer = ""
     event.clearEvents(eventType="keyboard")
     
-    #execute
-    while filler_timer.getTime() < filler1_time:
+    while countdown.getTime() >= 0:
+        # update timer
+        remaining_seconds = max(0, int(countdown.getTime() + 0.999))
+        minutes, seconds = divmod(remaining_seconds, 60)
+        timer.text = f"Time left\n{minutes:02d}:{seconds:02d}"
+                
+        # diplay all elements
         filler_instruction_screen.draw()
         arithmetic_question.draw()
         answer_text.text = f"Your answer: {typed_answer}"
         answer_text.draw()
+        timer.draw()
         win.flip()
 
         keys = event.getKeys()
@@ -227,15 +266,178 @@ while filler_timer.getTime() < filler1_time:
                 core.quit()
             elif key == "backspace":
                 typed_answer = typed_answer[:-1]
-            elif key == "minus" and typed_answer == "":
-                typed_answer = "-"
             elif key in "0123456789" and len(key) == 1:
                 typed_answer += key
-            elif key == "return" and typed_answer not in ("", "-"):
+            elif key == "return" and typed_answer != "":
                 break
         else:
             continue
+        ans = int(typed_answer)
+        count += 1
+        if ans == correct_sum:
+            correct_count += 1
+        break
+participant_row["fillers 1 answered"] = count
+participant_row["fillers 1 correct"] = correct_count
 
+# ----- Eye witness account verification instructions -----
+eye_witness_screen = text_display((0, 0), eye_witness_instruction)
+continue_button, continue_label = create_button((0, -0.25), "Continue")
+# click goes to next screen
+mouse = event.Mouse(win=win)
+mouse.setVisible(True)
+while True:
+    esc_quit()
+    eye_witness_screen.draw()
+    continue_button.draw()
+    continue_label.draw()
+    win.flip()
+    if mouse.isPressedIn(continue_button, buttons = [0]):
+        break
+
+# ----- Eye witness account verification -----
+reading_time = core.Clock()
+continue_button, continue_label = create_button((0, -0.35), "Continue")
+esc_quit()
+if participant_row["Condition"] == "control":
+    control_screen = text_display((0, 0), control_text)
+    control_screen.draw()
+    win.flip()
+elif participant_row["Condition"] == "misinformation":
+    misinformation_screen = text_display((0, 0), misinformation_text)
+    misinformation_screen.draw()
+    win.flip()
+while reading_time.getTime() >= 60:
+    continue_button.draw()
+    continue_label.draw()
+    win.flip()
+    mouse = event.Mouse(win=win)
+    mouse.setVisible(True)
+    if mouse.isPressedIn(continue_button, buttons = [0]):
+        break
+
+# ----- Filler Task2 -----
+filler_instruction_screen = text_display((0, 0.15), filler_instruction)
+arithmetic_question = text_display((0, 0))
+answer_text = text_display((0, -0.15))
+
+# countdown timer
+timer = text_display((win.size[0] / win.size[1]/2 - 0.1, 0.40))
+countdown = core.CountdownTimer(filler2_time)
+
+# task procedure
+count = 0
+correct_count = 0
+while countdown.getTime() >= 0:
+    # create question
+    number_A, number_B = random.randint(10, 99), random.randint(10, 99)
+    correct_sum = number_A + number_B
+    arithmetic_question.text = f"{number_A} + {number_B}= ?"
+    
+    #collect answer
+    typed_answer = ""
+    event.clearEvents(eventType="keyboard")
+    
+    while countdown.getTime() >= 0:
+        # update timer
+        remaining_seconds = max(0, int(countdown.getTime() + 0.999))
+        minutes, seconds = divmod(remaining_seconds, 60)
+        timer.text = f"Time left\n{minutes:02d}:{seconds:02d}"
+                
+        # diplay all elements
+        filler_instruction_screen.draw()
+        arithmetic_question.draw()
+        answer_text.text = f"Your answer: {typed_answer}"
+        answer_text.draw()
+        timer.draw()
+        win.flip()
+
+        keys = event.getKeys()
+
+        for key in keys:
+            if key == "escape":
+                win.close()
+                core.quit()
+            elif key == "backspace":
+                typed_answer = typed_answer[:-1]
+            elif key in "0123456789" and len(key) == 1:
+                typed_answer += key
+            elif key == "return" and typed_answer != "":
+                break
+        else:
+            continue
+        ans = int(typed_answer)
+        count += 1
+        if ans == correct_sum:
+            correct_count += 1
+        break
+participant_row["fillers 2 answered"] = count
+participant_row["fillers 2 correct"] = correct_count
+
+# ----- Memory test -----
+# create rating scale
+scale = visual.Slider(
+    win=win,
+    ticks = [1, 2, 3, 4, 5, 6],
+    labels = scale_labels,
+    granularity = 1,
+    style = "rating",
+    pos = (0, -0.20),
+    size = (0.8, 0.08),
+    units = "height",
+    labelHeight = 0.025
+)
+# memory test insructions
+mem_test_instruction = text_display((0, 0.35), memory_test_instruction)
+
+# randomize questions and collect answers
+trial = 0
+statements_ls = memory_test_items["Statement"].tolist()
+random.shuffle(statements_ls)
+for statement in statements_ls:
+    trial +=1
+    participant_row["trial"] = trial
+
+    statement_row = memory_test_items.loc[memory_test_items["Statement"] == statement, :]
+    participant_row["item_id"] = statement_row["item_id"]
+    participant_row["item_type"] = statement_row["item_type"]
+    participant_row["detail"] = statement_row["detail"]
+    
+    response_clock = core.Clock()
+    mem_test = text_display((0, 0.1), statement)    
+    mem_test_instruction.draw()
+    mem_test.draw()
+    scale.draw()
+    win.callOnFlip(response_clock.reset)
+    win.flip()
+
+    typed_number = ""
+    event.clearEvents(eventType="keyboard")
+    keys = event.getKeys()    
+    for key in keys:
+        if keys:
+            reaction_time = keys[0]
+        if key == "escape":
+            win.close()
+            core.quit()
+        elif key in "123456" and len(key) == 1:
+            typed_number += key
+        rating = int(typed_answer)
+    participant_row["response"] = rating
+    participant_row["rt_ms"] = reaction_time
+    
+# ----- Debrief page -----
+debrief = text_display((0, 0), debrief_text)
+finish_button, finish_label = create_button((0, -0.35), "Finish")
+debrief.draw()
+finish_button.draw()
+finish_label.draw()
+win.flip()
+
+mouse = event.Mouse(win=win)
+mouse.setVisible(True)
+while True:
+    if mouse.isPressedIn(finish_button, buttons = [0]):
         break
 
 # ----- Exporting saved data to csv -----
@@ -248,6 +450,7 @@ with data_file.open("a", newline="", encoding="utf-8") as file:
     if write_header:
         writer.writeheader()
     writer.writerow(participant_row)
+
 
 # ----- Experiment end -----
 win.close()

@@ -1,0 +1,25 @@
+item_id,item_type,detail,Statement,Correct answer
+1,TRUE,C1,It was raining that morning.,TRUE
+2,TRUE,C2,The woman was drinking tea.,TRUE
+3,TRUE,C3,The woman's wallet was black.,TRUE
+4,TRUE,C4,The man's jacket was green.,TRUE
+5,TRUE,C5,The barista wore glasses.,TRUE
+6,TRUE,C6,The man paid with coins.,TRUE
+7,TRUE,C7,The man put the wallet in his jacket pocket.,TRUE
+8,TRUE,C8,The man turned left when he left the cafe.,TRUE
+9,misinformation,C1,It was sunny that morning.,FALSE
+10,misinformation,C2,The woman was drinking a cappuccino.,FALSE
+11,misinformation,C3,The woman's wallet was brown.,FALSE
+12,misinformation,C4,The man's jacket was blue.,FALSE
+13,misinformation,C5,The barista had a grey beard.,FALSE
+14,misinformation,C6,The man paid by card.,FALSE
+15,misinformation,C7,The man put the wallet in his backpack.,FALSE
+16,misinformation,C8,The man turned right when he left the cafe.,FALSE
+17,TRUE,other,The woman wore a red scarf.,TRUE
+18,TRUE,other,The man ordered a coffee.,TRUE
+19,TRUE,other,The woman went to the toilet.,TRUE
+20,TRUE,other,Two police officers arrived.,TRUE
+21,foil,other,The woman was working on a tablet.,FALSE
+22,foil,other,The man ordered a sandwich.,FALSE
+23,foil,other,The woman wore a yellow scarf.,FALSE
+24,foil,other,The barista called the woman's friend.,FALSE
