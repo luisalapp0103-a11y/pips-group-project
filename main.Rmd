@@ -1,6 +1,7 @@
 ---
-title: "Project title"
-author: "Name 1, Name 2, Name 3"
+title: "Does Misleading Information Change What We Remember?"
+subtitle: "A simulation, power analysis and pilot experiment on the misinformation effect"
+author: "Elinor Zhu, Luisa Lapp, Nise Pardün"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -8,14 +9,6 @@ output:
     toc_float: true
 bibliography: references.bib
 ---
-
-<!--
-NOTE FOR THE GROUP
-This document already runs from top to bottom with placeholder functions.
-Replace the placeholder text (marked TODO) and the functions in src/r/ with
-the real project. Keep the code chunks short: the work happens in src/r/,
-and this file tells the story.
--->
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
@@ -25,58 +18,220 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 source("src/r/setup_packages.R")
 install_and_load()
 
-source("src/r/simulate_data.R")
-source("src/r/analyse_data.R")
-source("src/r/plot_results.R")
+source("src/r/simulate_experiment.R")
 ```
 
 ## 1. Introduction
 
-TODO: explain the research question and why it matters, with references to
-the literature. Citations are written like this: [@simmons2011]. They appear
-automatically in the reference list at the end.
+People's memory of an event can change after they hear misleading
+information about it. In a classic study, participants saw a car stop at a
+stop sign; after being told it was a yield sign, many later "remembered" a
+yield sign [@loftus1978]. This *misinformation
+effect* has been replicated many times and matters for eyewitness testimony
+and for how people remember events they see in the media [@loftus2005].
 
-## 2. Data
+@sievwright2021 recently tested the effect online. Participants watched a
+video, read an eyewitness account with false details five to ten days later,
+and then rated statements about the video on a 1-6 scale from "certain this
+is false" to "certain this is true". Misinformed participants were worse at
+telling true details from false ones (Cohen's *d* = 0.42).
 
-TODO: explain how the data are generated or collected, and why the chosen
-values (sample size, effect size, ...) are realistic.
+**Our research question:** do people who read an eyewitness account with
+false details accept more of those false details as true than people who
+read a neutral account?
 
-```{r simulate-data}
-study_data <- simulate_data(n_per_group = 50, mean_difference = 0.5)
-save_data(study_data, file = "data/simulated_data.csv")
+In this project we:
 
-head(study_data)
+1. simulate data for this experiment and use it to work out how many
+   participants a study needs (power analysis);
+2. provide a short experiment in Python to collect real data;
+3. analyse and visualise the results.
+
+## 2. Experiment design
+
+The experiment is a simplified, single-session version of
+@sievwright2021. Instead of a violent video, participants read a neutral
+story about a wallet being stolen in a café, so the study is safe to run
+with fellow students.
+
+| Step | What happens |
+|---|---|
+| Event | 12 short slides tell the story; 8 slides contain a *critical detail* (e.g. the man's jacket is green) |
+| Filler task | 5 minutes of simple sums |
+| Eyewitness account | **Misinformation** group: an account with 8 false details (e.g. a *blue* jacket). **Control** group: the same account with neutral wording |
+| Filler task | 3 minutes of simple sums |
+| Memory test | 24 statements (8 true critical details, 8 misinformation details, 4 other true details, 4 foils), each rated from 1 (certain false) to 6 (certain true) |
+
+Participants are assigned to a condition by their participant number (odd =
+misinformation, even = control). Every participant produces one CSV file
+with 24 rows, one per test statement.
+
+**Main outcome:** the proportion of the 8 misinformation statements a
+participant rates as true (a response of 4-6). If the misinformation effect
+exists, this proportion is higher in the misinformation group.
+
+## 3. Simulation
+
+Before collecting data, we simulate participants in exactly the CSV format
+the experiment produces. This lets us build and test the analysis first,
+and check that the analysis finds an effect when we know one is there.
+
+In the simulation, every statement gives a participant some "evidence that
+it is true", drawn from a normal distribution. True statements get high
+evidence, foils and misinformation statements low evidence. Misinformed
+participants get extra evidence for the misinformation statements: the
+size of that extra evidence (`effect_size`) is the misinformation effect.
+
+### Matching the effect size to the literature
+
+`effect_size` is on the simulation's own scale, not on the scale of
+Cohen's *d*. We therefore look for the `effect_size` that produces the
+effect reported by @sievwright2021 (*d* = `r TARGET_COHENS_D`). We take
+their smallest effect, because our delay between story and account is much
+shorter than theirs, which probably makes the effect smaller.
+
+```{r calibrate, cache = TRUE}
+calibration <- find_effect_size(target_d = TARGET_COHENS_D,
+                                candidates = seq(0.15, 0.40, by = 0.05))
+knitr::kable(calibration$table,
+             col.names = c("effect_size", "Cohen's d"))
 ```
 
-## 3. Analysis
+An `effect_size` of **`r calibration$best`** comes closest to
+*d* = `r TARGET_COHENS_D`, so we use this value from here on.
 
-TODO: explain which statistical test is used and why it fits the data.
+### One simulated study
 
-```{r analyse-data}
-test_result <- analyse_data(study_data)
+```{r simulate-study}
+simulated <- simulate_study(n_per_group = 20,
+                            effect_size = calibration$best)
+save_simulated_study(simulated, folder = "data/simulated")
+
+endorsement_by_type <- aggregate(
+  I(response >= 4) ~ condition + item_type,
+  data = simulated, FUN = mean
+)
+names(endorsement_by_type)[3] <- "proportion_true"
+knitr::kable(endorsement_by_type, digits = 2)
+```
+
+As intended, true statements are mostly rated true and foils mostly false
+in both groups. Only the misinformation statements differ between the
+groups.
+
+## 4. Power analysis
+
+How many participants does a study need to find this effect? We simulate
+the whole study 200 times for each group size, run the *t*-test of
+section 6 each time, and count how often the effect is significant
+(*p* < `r ALPHA`). That proportion is the **power**.
+
+```{r power-analysis, cache = TRUE}
+curve <- power_curve(group_sizes = c(10, 20, 30, 40, 50, 60, 80),
+                     effect_size = calibration$best,
+                     n_simulations = 200)
+plot_power_curve(curve)
+```
+
+```{r needed-sample, include = FALSE}
+enough_power <- curve$n_per_group[curve$power >= TARGET_POWER]
+needed_n <- if (length(enough_power) > 0) min(enough_power) else NA
+```
+
+For `r round(TARGET_POWER * 100)`% power, a study needs about
+**`r needed_n` participants per condition**
+(`r 2 * needed_n` in total). Each point is based on 200 simulated studies,
+so the exact values vary by a few percentage points.
+
+This is more than we can recruit for this course. Our own data collection
+is therefore a **pilot study**: it tests whether the experiment works and
+gives a first impression of the effect, but a non-significant result would
+not show that the effect is absent.
+
+## 5. Running the experiment
+
+The experiment is written in Python and saves one CSV file per participant
+in `data/raw/`. See the README for how to install it. Run it from the
+project folder in the terminal (not in R):
+
+```{bash run-experiment, eval = FALSE}
+python src/py/experiment.py
+```
+
+This chunk is not run when knitting, because the experiment needs a
+participant at the keyboard.
+
+## 6. Analysis
+
+The analysis uses the real data in `data/raw/` if there are any, and
+otherwise the simulated data. This way the document always runs.
+
+```{r load-data}
+# TODO (Nise): replace with the final data-loading and analysis functions.
+data_folder <- if (length(list.files("data/raw", pattern = "\\.csv$")) > 0) {
+  "data/raw"
+} else {
+  "data/simulated"
+}
+csv_files <- list.files(data_folder, pattern = "\\.csv$", full.names = TRUE)
+study_data <- do.call(rbind, lapply(csv_files, read.csv))
+```
+
+We analyse the data in **`r data_folder`**: `r length(csv_files)`
+participants. Participants who failed the attention check are excluded.
+
+```{r analysis}
+per_participant <- summarise_endorsement(study_data)
+test_result <- t.test(endorsed ~ condition, data = per_participant)
 test_result
 ```
 
-TODO: interpret the result in words (direction, size and significance of the
-effect).
-
-## 4. Visualisation
-
-TODO: explain what the plot shows and how it supports the analysis.
-
-```{r plot-results, fig.width = 7, fig.height = 5}
-plot_results(study_data)
+```{r group-means, include = FALSE}
+group_means <- tapply(per_participant$endorsed, per_participant$condition,
+                      mean)
 ```
 
-## 5. Discussion
+On average, participants in the misinformation group rated
+`r round(group_means["misinformation"] * 100)`% of the misinformation
+statements as true, compared with
+`r round(group_means["control"] * 100)`% in the control group
+(Welch *t*(`r round(test_result$parameter, 1)`) =
+`r round(test_result$statistic, 2)`,
+*p* = `r format.pval(test_result$p.value, digits = 2, eps = 0.001)`).
 
-TODO: what do the results mean, what are the limitations, and what would be a
-useful next step?
-#Can you see this
-#yes
+## 7. Visualisation
 
+```{r plot-results, fig.width = 7, fig.height = 5}
+# TODO (Nise): replace with the final plot function.
+ggplot(per_participant, aes(x = condition, y = endorsed)) +
+  geom_jitter(width = 0.1, height = 0.02, alpha = 0.5) +
+  stat_summary(fun.data = mean_se, colour = "darkred", size = 0.8) +
+  scale_y_continuous(limits = c(0, 1),
+                     labels = function(x) paste0(round(x * 100), "%")) +
+  labs(
+    x = "Condition",
+    y = "Misinformation statements rated as true",
+    title = "Misinformation statements accepted as true",
+    subtitle = "Dots: participants. Red: mean ± 1 standard error."
+  ) +
+  theme_minimal()
+```
+
+Each dot is one participant. A higher position for the misinformation group
+means its participants accepted more false details as true.
+
+## 8. Discussion
+
+TODO: write once the real data are in. Points to cover:
+
+- What the pilot result shows, and how it compares with @sievwright2021.
+- **Sample size:** according to the power analysis, a full study needs about
+  `r needed_n` participants per condition; our pilot has far fewer.
+- **Short delay:** we used minutes instead of a week, which probably makes
+  the effect smaller [@sievwright2021].
+- **Simulation assumptions:** the simulated effect is based on one study; a
+  different effect size gives a different required sample.
+- A useful next step: a preregistered study with the sample size from the
+  power analysis.
 
 ## References
-## adding test
-## I don't know
-## demonstrating
