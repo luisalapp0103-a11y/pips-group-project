@@ -167,7 +167,6 @@ The analysis uses the real data in `data/raw/` if there are any, and
 otherwise the simulated data. This way the document always runs.
 
 ```{r load-data}
-# TODO (Nise): replace with the final data-loading and analysis functions.
 data_folder <- if (length(list.files("data/raw", pattern = "\\.csv$")) > 0) {
   "data/raw"
 } else {
@@ -202,7 +201,6 @@ statements as true, compared with
 ## 7. Visualisation
 
 ```{r plot-results, fig.width = 7, fig.height = 5}
-# TODO (Nise): replace with the final plot function.
 ggplot(per_participant, aes(x = condition, y = endorsed)) +
   geom_jitter(width = 0.1, height = 0.02, alpha = 0.5) +
   stat_summary(fun.data = mean_se, colour = "darkred", size = 0.8) +
@@ -222,16 +220,33 @@ means its participants accepted more false details as true.
 
 ## 8. Discussion
 
-TODO: write once the real data are in. Points to cover:
+We built a complete pipeline to study the misinformation effect: a
+simulation calibrated to the literature, a power analysis, an experiment
+in Python and an analysis that runs on both simulated and real data.
 
-- What the pilot result shows, and how it compares with @sievwright2021.
-- **Sample size:** according to the power analysis, a full study needs about
-  `r needed_n` participants per condition; our pilot has far fewer.
-- **Short delay:** we used minutes instead of a week, which probably makes
-  the effect smaller [@sievwright2021].
-- **Simulation assumptions:** the simulated effect is based on one study; a
-  different effect size gives a different required sample.
-- A useful next step: a preregistered study with the sample size from the
-  power analysis.
+In the data analysed here (`r data_folder`), the misinformation group
+rated `r round(group_means["misinformation"] * 100)`% of the false details
+as true, compared with `r round(group_means["control"] * 100)`% in the
+control group. This difference was
+`r ifelse(test_result$p.value < ALPHA, "statistically significant", "not statistically significant")`
+(*p* = `r format.pval(test_result$p.value, digits = 2, eps = 0.001)`).
+Because these data are simulated, this result only shows that the analysis
+works and detects an effect of the expected size; it says nothing yet about
+real participants.
+
+**Limitations.**
+
+- **Sample size.** The power analysis shows that a study needs about
+  `r needed_n` participants per condition for `r round(TARGET_POWER * 100)`%
+  power. A study with fewer participants will often miss a real effect.
+- **Short delay.** Our experiment uses minutes instead of the week used by
+  @sievwright2021. Memory for the story is then still fresh, which
+  probably makes the misinformation effect smaller.
+- **Simulation assumptions.** The simulated effect is based on a single
+  study. If the true effect is smaller, even more participants are needed.
+
+**Next step.** Run the experiment with the sample size from the power
+analysis, ideally preregistered, and knit this document again: it then
+analyses the real data in `data/raw/` automatically.
 
 ## References

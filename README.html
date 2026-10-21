@@ -379,7 +379,8 @@ University of Amsterdam.</p>
 <h3>Requirements</h3>
 <ul>
 <li>R 4.4 or newer, and RStudio (recommended)</li>
-<li>Python 3.10 or newer (only needed to run the experiment)</li>
+<li>Python 3.10 with PsychoPy (only needed to run the experiment;
+install with pip install psychopy)</li>
 </ul>
 </div>
 <div id="clone-the-repository" class="section level3">
@@ -400,10 +401,9 @@ packages (dplyr, ggplot2) are installed automatically by
 calibration and power analysis simulate thousands of studies. The
 results are cached, so later knits are fast.</p>
 </div>
-<div id="run-the-experiment-python-optional" class="section level3">
-<h3>3. Run the experiment (Python, optional)</h3>
-<p>The experiment uses only Tkinter, which comes with Python, so nothing
-extra needs to be installed. From the project folder, in a terminal:</p>
+<div id="run-the-experiment-python" class="section level3">
+<h3>3. Run the experiment (Python)</h3>
+<p>From the project folder, in a terminal:</p>
 <pre><code>python3 src/py/experiment.py</code></pre>
 <p>Each participant’s responses are saved as one CSV file in
 <code>data/raw/</code>. Knit <code>main.Rmd</code> again to analyse
@@ -442,7 +442,7 @@ analysis works on both. The full column list is in
 <ul>
 <li><strong>R:</strong> dplyr (data manipulation), ggplot2 (plots),
 knitr and rmarkdown (knitting <code>main.Rmd</code>)</li>
-<li><strong>Python:</strong> Tkinter and the standard library only</li>
+<li><strong>Python:</strong> PsychoPy</li>
 </ul>
 </div>
 <div id="references" class="section level2">
