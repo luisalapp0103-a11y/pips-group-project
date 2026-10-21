@@ -26,7 +26,8 @@ Amsterdam.
 ### Requirements
 
 - R 4.4 or newer, and RStudio (recommended)
-- Python 3.10 or newer (only needed to run the experiment)
+- Python 3.10 with PsychoPy (only needed to run the experiment; install 
+  with pip install psychopy)
 
 ### 1. Clone the repository
 
@@ -53,10 +54,9 @@ The first knit takes a few minutes, because the effect-size calibration
 and power analysis simulate thousands of studies. The results are cached,
 so later knits are fast.
 
-### 3. Run the experiment (Python, optional)
+### 3. Run the experiment (Python)
 
-The experiment uses only Tkinter, which comes with Python, so nothing extra
-needs to be installed. From the project folder, in a terminal:
+From the project folder, in a terminal:
 
 ```
 python3 src/py/experiment.py
@@ -97,7 +97,7 @@ analysis works on both. The full column list is in `CONTRIBUTING.md`.
 
 - **R:** dplyr (data manipulation), ggplot2 (plots), knitr and rmarkdown
   (knitting `main.Rmd`)
-- **Python:** Tkinter and the standard library only
+- **Python:** PsychoPy
 
 ## References
 
