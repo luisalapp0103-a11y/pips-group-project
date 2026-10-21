@@ -43,13 +43,37 @@ analyse_data <- function(data) {
       misinfo_proportion = mean(accepted),
       .groups = "drop"
     )
+  
   # Compare misinformation acceptance between conditions
   test_result <- t.test(
     misinfo_proportion ~ condition,
     data = participant_data
   )
+  
+  # Calculate Cohen's d
+  group_stats <- participant_data |>
+    dplyr::group_by(condition) |>
+    dplyr::summarise(
+      mean = mean(misinfo_proportion),
+      sd = sd(misinfo_proportion),
+      n = dplyr::n(),
+      .groups = "drop"
+    )
+  
+  pooled_sd <- sqrt(
+    ((group_stats$n[1] - 1) * group_stats$sd[1]^2 +
+       (group_stats$n[2] - 1) * group_stats$sd[2]^2) /
+      (group_stats$n[1] + group_stats$n[2] - 2)
+  )
+  
+  cohens_d <- (
+    group_stats$mean[group_stats$condition == "misinformation"] -
+      group_stats$mean[group_stats$condition == "control"]
+  ) / pooled_sd
+  
   return(list(
     participant_data = participant_data,
-    t_test = test_result
+    t_test = test_result,
+    cohens_d = cohens_d
   ))
 }
