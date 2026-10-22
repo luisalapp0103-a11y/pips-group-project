@@ -309,7 +309,7 @@ arithmetic_question = text_display((0, 0))
 answer_text = text_display((0, -0.15))
 
 # countdown timer
-timer = text_display((win.size[0] / win.size[1]/2 - 0.1, 0.40))
+timer = text_display((win.size[0] / win.size[1]/2 - 0.15, 0.35), color = "blue")
 countdown = core.CountdownTimer(filler1_time)
 
 # task procedure
@@ -440,7 +440,7 @@ arithmetic_question = text_display((0, 0))
 answer_text = text_display((0, -0.15))
 
 # countdown timer
-timer = text_display((win.size[0] / win.size[1]/2 - 0.1, 0.40))
+timer = text_display((win.size[0] / win.size[1]/2 - 0.15, 0.35), color = "blue")
 countdown = core.CountdownTimer(filler2_time)
 
 # task procedure
@@ -499,6 +499,7 @@ while countdown.getTime() >= 0:
 data_record["filler2_answered"] = count
 data_record["filler2_correct"] = correct_count
 save_checkpoint()
+core.wait(0.5)
 
 
 
